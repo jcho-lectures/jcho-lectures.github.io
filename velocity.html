@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area Under v(t) = −t(t−6) with Rectangles</title>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']], macros: { dif: ['\\,\\mathrm{d}#1', 1] } },
+    svg: { fontCache: 'global' },
+    startup: { typeset: false }
+  };
+</script>
+<script id="mj" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+<style>
+  :root{
+    --bg:#fafaf7; --card:#fff; --ink:#1f2430; --muted:#6a7080; --line:#e3e3dc;
+    --accent:#2a6fdb; --rect:rgba(42,111,219,.28); --rectLine:#2a6fdb; --curve:#000; --over:rgba(220,38,38,.5); --overInk:#dc2626; --miss:rgba(22,163,74,.45); --missInk:#16a34a;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#16181d; --card:#1e2128; --ink:#e8eaf0; --muted:#98a0b3; --line:#323744;
+      --accent:#6ea2ff; --rect:rgba(110,162,255,.28); --rectLine:#6ea2ff; --curve:#fff; --over:rgba(248,113,113,.55); --overInk:#f87171; --miss:rgba(74,222,128,.45); --missInk:#4ade80;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 Georgia,"Times New Roman",serif}
+  main{max-width:820px;margin:0 auto;padding:28px 20px 60px}
+  h1{font-size:1.5rem;margin:0 0 .6rem}
+  p{margin:.8rem 0}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .plotwrap{width:100%;max-width:400px;margin:0 auto;aspect-ratio:350/550}
+  svg#plot{width:100%;height:100%;display:block}
+  mjx-container{color:var(--ink)}
+  mjx-container[display="true"]{margin:.9rem 0 !important;overflow-x:auto;overflow-y:hidden;padding:2px 0}
+  .ctl{display:flex;align-items:center;gap:14px;margin-top:10px;font-family:system-ui,sans-serif}
+  .ctl label{font-weight:600;white-space:nowrap}
+  .ctl output{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);font-size:1.1rem}
+  input[type=range]{flex:1;accent-color:var(--accent);height:28px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px;font-family:system-ui,sans-serif}
+  .stat{border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  .stat b{display:block;font-size:1.1rem;font-variant-numeric:tabular-nums}
+  .stat span{font-size:.8rem;color:var(--muted)}
+  .note{color:var(--muted);font-size:.9em}
+  .sub{text-align:center;color:var(--muted);font-size:.9em;margin-top:-.3rem}
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="plotwrap"><svg id="plot" viewBox="0 0 350 550" role="img" aria-label="Rectangles under the parabola v(t) = -t(t-6)"></svg></div>
+    <div class="ctl">
+      <label for="n">Number of rectangles \(N\)</label>
+      <input id="n" type="range" min="1" max="200" value="4" step="1">
+      <output id="nOut" for="n">4</output>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>\(\Delta t = 6/N\)</span><b id="dx"></b></div>
+      <div class="stat"><span>Total area of rectangles</span><b id="sum"></b></div>
+
+    </div>
+  </div>
+
+</main>
+
+<script>
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("plot");
+const slider = document.getElementById("n");
+// Equal scale on both axes: PX pixels per unit in t and in v.
+const PX=50, L=36, T=10, XMAX=6, YMAX=10;
+const X = t => L + t*PX, Y = y => T + (YMAX-y)*PX;
+const f = t => -t*(t-6);
+const words = ["","one","two","three","four","five","six","seven","eight","nine","ten"];
+
+function el(tag, attrs){
+  const e=document.createElementNS(NS,tag);
+  for(const k in attrs) e.setAttribute(k,attrs[k]);
+  svg.appendChild(e); return e;
+}
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const P = (x,y)=>X(x).toFixed(2)+","+Y(y).toFixed(2);
+
+function draw(N){
+  svg.innerHTML="";
+  const ink=css("--ink"), muted=css("--muted"), line=css("--line");
+  const over=css("--over"), miss=css("--miss"), rect=css("--rect"), rl=css("--rectLine"), curve=css("--curve");
+  const dt=XMAX/N;
+  for(let t=0;t<=XMAX;t++){
+    el("line",{x1:X(t),y1:Y(0),x2:X(t),y2:Y(YMAX),stroke:line,"stroke-width":1});
+    el("text",{x:X(t),y:Y(0)+16,"text-anchor":"middle","font-size":12,fill:muted,"font-family":"system-ui"}).textContent=t;
+  }
+  for(let y=0;y<=YMAX;y++){
+    el("line",{x1:X(0),y1:Y(y),x2:X(XMAX),y2:Y(y),stroke:line,"stroke-width":1});
+    el("text",{x:X(0)-7,y:Y(y)+4,"text-anchor":"end","font-size":12,fill:muted,"font-family":"system-ui"}).textContent=y;
+  }
+  el("line",{x1:X(0),y1:Y(0),x2:X(XMAX)+8,y2:Y(0),stroke:ink,"stroke-width":1.5});
+  el("line",{x1:X(0),y1:Y(0),x2:X(0),y2:Y(YMAX)-8,stroke:ink,"stroke-width":1.5});
+  const sw = N>120 ? 0.25 : N>60 ? 0.4 : N>30 ? 0.8 : 1.4;
+  const m=Math.max(6,Math.ceil(240/N));
+  for(let i=1;i<=N;i++){
+    const t0=(i-1)*dt, t1=i*dt, h=f(t1);
+    const xs=[]; for(let k=0;k<=m;k++) xs.push(t0+(t1-t0)*k/m);
+    const lo=xs.map(t=>Math.min(f(t),h)), hi=xs.map(t=>Math.max(f(t),h));
+    const poly=(top,bot)=>"M"+xs.map((t,k)=>P(t,top[k])).join(" L")+" L"+xs.slice().reverse().map((t,k)=>P(t,bot[m-k])).join(" L")+" Z";
+    const zero=xs.map(()=>0), hh=xs.map(()=>h);
+    el("path",{d:poly(lo,zero),fill:rect,stroke:"none"});          // blue: counted and under the curve
+    el("path",{d:poly(hh,lo),fill:over,stroke:"none"});            // red: overshoot (above curve)
+    el("path",{d:poly(hi,hh),fill:miss,stroke:"none"});            // green: under curve but not covered
+    el("rect",{x:X(t0),y:Y(h),width:X(t1)-X(t0),height:Y(0)-Y(h),fill:"none",stroke:rl,"stroke-width":sw});
+  }
+  let d="";
+  for(let k=0;k<=240;k++){const t=XMAX*k/240; d+=(k?"L":"M")+P(t,f(t));}
+  el("path",{d,fill:"none",stroke:curve,"stroke-width":2.5});
+  el("text",{x:X(3.35),y:Y(9.45),"font-size":15,fill:curve,"font-family":"Georgia,serif","font-style":"italic"}).textContent="v(t) = −t(t−6)";
+  if(N<=10){
+    for(let i=1;i<=N;i++){
+      const tt=el("text",{x:X(i*dt),y:Y(0)+32,"text-anchor":"middle","font-size":12,fill:rl,"font-family":"Georgia,serif","font-style":"italic"});
+      tt.innerHTML = "t<tspan dy='3' font-size='9'>"+i+"</tspan>";
+    }
+  }
+}
+
+let chain = Promise.resolve();
+function typeset(els){
+  if(!(window.MathJax && MathJax.typesetPromise)) return;
+  chain = chain.then(()=>{ MathJax.typesetClear(els); return MathJax.typesetPromise(els); }).catch(()=>{});
+}
+
+function update(){
+  const N=+slider.value, dt=6/N;
+  draw(N);
+  let s=0;
+  for(let i=1;i<=N;i++){
+    const h=f(i*dt); s+=h*dt;
+  }
+  document.getElementById("nOut").textContent=N;
+  document.getElementById("dx").textContent = "6/"+N+" = "+dt.toFixed(4);
+  document.getElementById("sum").textContent = s.toFixed(4);
+}
+
+slider.addEventListener("input", update);
+update();
+document.getElementById("mj").addEventListener("load", ()=>{
+  MathJax.startup.promise.then(()=>{ return MathJax.typesetPromise(); });
+});
+</script>
+</body>
+</html>

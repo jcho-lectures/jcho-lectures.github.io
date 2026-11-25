@@ -72,12 +72,12 @@
     margin: 0 auto;
     padding: 16px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px));
     grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "eq" "plot" "graph" "opt";
+    grid-template-areas: "eq" "plot" "opt" "graph";
   }
   @media (min-width: 700px) and (orientation: landscape), (min-width: 1000px) {
     .app {
       grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
-      grid-template-areas: "plot eq" "plot graph" "plot opt";
+      grid-template-areas: "plot eq" "plot opt" "plot graph";
       grid-template-rows: auto auto 1fr;
       align-items: start;
       padding-top: 24px;
@@ -138,6 +138,15 @@
   .graph-field { margin: 0; }
   #graph-fields { margin-top: 12px; border: 0; padding: 0; min-width: 0; }
   #graph-fields:disabled { opacity: 0.45; }
+  .param { margin-top: 12px; }
+  .param label {
+    display: block;
+    font-family: "Source Serif 4", Georgia, serif;
+    font-style: italic;
+    font-size: 17px;
+  }
+  .param output { font-style: normal; font-family: "Source Sans 3", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+  .param input[type="range"] { display: block; width: 100%; height: 28px; margin: 4px 0 0; accent-color: var(--graph); cursor: pointer; }
   .graph-field .switch-row label::before {
     content: ""; display: inline-block; width: 18px; height: 3px; border-radius: 2px;
     background: var(--graph); margin-right: 8px; vertical-align: middle;
@@ -261,18 +270,6 @@
 
   </section>
 
-  <section id="graph-section" class="graph-field">
-    <div class="switch-row">
-      <input type="checkbox" role="switch" class="switch" id="graph-toggle">
-      <label for="graph-toggle">Graph</label>
-    </div>
-    <fieldset id="graph-fields" disabled>
-      <input id="graph" type="text" aria-label="Graph equation" placeholder="Equation in x and y" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="graph-err graph-help">
-      <p id="graph-err" role="status" aria-live="polite"></p>
-      <p id="graph-help" class="hint">Explicit or implicit, such as y = x^2 or x^3 + y^3 = 3xy. Without an “=”, the expression is set equal to 0. Separate several equations with “;”.</p>
-    </fieldset>
-  </section>
-
   <section id="plot-section">
     <div class="plotwrap" id="plotwrap">
       <canvas id="plot" tabindex="0" role="img" aria-label="Slope field for x from −5 to 5 and y from −5 to 5"></canvas>
@@ -304,6 +301,22 @@
       </fieldset>
     </div>
   </section>
+
+  <section id="graph-section" class="graph-field">
+    <div class="switch-row">
+      <input type="checkbox" role="switch" class="switch" id="graph-toggle">
+      <label for="graph-toggle">Graph</label>
+    </div>
+    <fieldset id="graph-fields" disabled>
+      <input id="graph" type="text" aria-label="Graph equation" placeholder="Equation in x and y" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="graph-err graph-help">
+      <div class="param">
+        <label for="c-range">C = <output id="c-val" for="c-range">0</output></label>
+        <input type="range" id="c-range" min="-5" max="5" step="0.1" value="0">
+      </div>
+      <p id="graph-err" role="status" aria-live="polite"></p>
+      <p id="graph-help" class="hint">Explicit or implicit, such as y = x^2 + C or x^2 + y^2 = C. Use the slider to change C. Without an “=”, the expression is set equal to 0. Separate several equations with “;”.</p>
+    </fieldset>
+  </section>
 </main>
 
 <script>
@@ -323,7 +336,8 @@
     sqrt: Math.sqrt, cbrt: Math.cbrt, abs: Math.abs
   };
   var CONSTS = { pi: Math.PI, e: Math.E };
-  var NAMES = Object.keys(FUNCS).concat(Object.keys(CONSTS), ['x', 'y'])
+  var PARAM_C = 0;
+  var NAMES = Object.keys(FUNCS).concat(Object.keys(CONSTS), ['x', 'y', 'c'])
     .sort(function (a, b) { return b.length - a.length; });
 
   function tokenize(src) {
@@ -358,7 +372,7 @@
     return toks;
   }
 
-  function compile(src) {
+  function compile(src, allowC) {
     var toks = tokenize(src), p = 0;
     if (!toks.length) throw new Error('Enter an expression for dy/dx.');
     function isOp(v) { return toks[p] && toks[p].t === 'op' && toks[p].v === v; }
@@ -414,6 +428,10 @@
         var n = t.v;
         if (n === 'x') return function (x) { return x; };
         if (n === 'y') return function (x, y) { return y; };
+        if (n === 'c') {
+          if (!allowC) throw new Error('“c” is only available in the Graph equation.');
+          return function () { return PARAM_C; };
+        }
         if (CONSTS.hasOwnProperty(n)) { var cv = CONSTS[n]; return function () { return cv; }; }
         var fn = FUNCS[n], power = null;
         if (isOp('^')) { p++; power = parseUnary(); }
@@ -497,9 +515,9 @@
     var parts = src.replace(/==/g, '=').split('=');
     if (parts.length > 2) throw new Error('Use at most one “=” in each equation.');
     if (parts.some(function (s) { return !s.trim(); })) throw new Error('Each side of “=” needs an expression.');
-    var l = compile(parts[0]);
+    var l = compile(parts[0], true);
     if (parts.length === 1) return l;
-    var r = compile(parts[1]);
+    var r = compile(parts[1], true);
     return function (x, y) { return l(x, y) - r(x, y); };
   }
 
@@ -776,19 +794,24 @@
 
   var graphInput = document.getElementById('graph');
   var graphErr = document.getElementById('graph-err');
+  var gFuncs = [];
+  function rebuildGraph() {
+    var all = [];
+    gFuncs.forEach(function (g) {
+      var segs = contour(g);
+      for (var i = 0; i < segs.length; i++) all.push(segs[i]);
+    });
+    state.graph = all;
+    schedule();
+  }
   function onGraph() {
     var parts = graphInput.value.split(';').map(function (s) { return s.trim(); })
       .filter(function (s) { return s.length; });
     try {
-      var all = [];
-      parts.forEach(function (p) {
-        var segs = contour(compileGraph(p));
-        for (var i = 0; i < segs.length; i++) all.push(segs[i]);
-      });
-      state.graph = all;
+      gFuncs = parts.map(compileGraph);
       graphErr.textContent = '';
       graphInput.setAttribute('aria-invalid', 'false');
-      schedule();
+      rebuildGraph();
     } catch (e) {
       graphErr.textContent = e.message;
       graphInput.setAttribute('aria-invalid', 'true');
@@ -823,6 +846,18 @@
                    ['tan', 'tan('], ['eˣ', 'e^'], ['ln', 'ln('], ['√', 'sqrt(']];
   addKeys(eqInput, BASE_KEYS);
   addKeys(graphInput, [['=', '=']].concat(BASE_KEYS));
+  var cRange = document.getElementById('c-range');
+  var cVal = document.getElementById('c-val');
+  var rebuildQueued = false;
+  cRange.addEventListener('input', function () {
+    PARAM_C = parseFloat(cRange.value);
+    cVal.textContent = minus(Math.round(PARAM_C * 100) / 100);
+    if (!rebuildQueued) {
+      rebuildQueued = true;
+      requestAnimationFrame(function () { rebuildQueued = false; rebuildGraph(); });
+    }
+  });
+
   var graphToggle = document.getElementById('graph-toggle');
   var graphFields = document.getElementById('graph-fields');
   graphToggle.addEventListener('change', function () {

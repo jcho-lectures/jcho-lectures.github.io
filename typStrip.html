@@ -122,7 +122,7 @@ function draw(){
   place("ldr",0,hi+0.8);
   // draggable point r_i
   el("circle",{class:"drag",cx:X(ri),cy:Y(0),r:34,fill:"transparent"});
-  el("circle",{cx:X(ri),cy:Y(0),r:8,fill:acc,stroke:card,"stroke-width":2,"pointer-events":"none"});
+  el("circle",{cx:X(ri),cy:Y(0),r:9.5,fill:acc,stroke:card,"stroke-width":2,"pointer-events":"none"});
   place("lri",ri/2,0.62);
   // the rectangle
   const x0=-L/2, x1=L/2, yt=RY+h/2, yb=RY-h/2;
@@ -158,6 +158,9 @@ svg.addEventListener("keydown",e=>{
   if(e.key==="ArrowLeft"||e.key==="ArrowDown"){setRi(ri-0.05);e.preventDefault();}
   if(e.key==="ArrowRight"||e.key==="ArrowUp"){setRi(ri+0.05);e.preventDefault();}
 });
+svg.addEventListener("touchstart",e=>{   // keep the page from scrolling while a finger drags the point
+  if(e.target.classList&&e.target.classList.contains("drag")) e.preventDefault();
+},{passive:false});
 slider.addEventListener("input",update);
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",draw);
 update();

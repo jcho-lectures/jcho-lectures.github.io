@@ -25,17 +25,17 @@
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,sans-serif}
-  main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+  main{max-width:640px;margin:0 auto;padding:16px 10px 32px}
   h1{font:700 1.5rem/1.65 Georgia,"Times New Roman",serif;margin:0 0 .6rem}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .plotwrap{position:relative;width:100%;max-width:520px;margin:0 auto;aspect-ratio:566/578}
-  .legend{position:absolute;top:0;left:16.25%;display:flex;flex-wrap:wrap;gap:2px 18px;font-size:.95em;line-height:1.2;pointer-events:none}
-  .legend i{display:inline-block;width:22px;height:3px;margin-right:6px;vertical-align:middle;border-radius:2px}
-  .lbl{position:absolute;white-space:nowrap;line-height:1;pointer-events:none;font-size:.98em}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .plotwrap{container-type:inline-size;position:relative;width:100%;max-width:520px;margin:0 auto;aspect-ratio:566/578}
+  .legend{position:absolute;top:0;left:16.25%;display:flex;flex-wrap:wrap;gap:2px 3.4cqw;font-size:16px;font-size:3.05cqw;line-height:1.2;pointer-events:none}
+  .legend i{display:inline-block;width:4.2cqw;height:3px;margin-right:1.2cqw;vertical-align:middle;border-radius:2px}
+  .lbl{position:absolute;white-space:nowrap;line-height:1;pointer-events:none;font-size:16px;font-size:3.1cqw}
   #lf{color:var(--f);transform:translate(0,-50%)}
   #lg{color:var(--g);transform:translate(0,-50%)}
   #lxi{color:var(--rectLine);transform:translate(-50%,-50%)}
-  #ldx{color:var(--muted);transform:translate(-50%,-50%);font-size:.7em}
+  #ldx{color:var(--muted);transform:translate(-50%,-50%);font-size:12px;font-size:2.4cqw}
   mjx-container{color:inherit}
   svg#plot{width:100%;height:100%;display:block;touch-action:pan-y;user-select:none;-webkit-user-select:none}
   svg#plot .drag{cursor:grab}
@@ -87,9 +87,9 @@ function draw(){
     el("line",{x1:X(t),y1:Y(0),x2:X(t),y2:Y(1),stroke:line,"stroke-width":1});
     el("line",{x1:X(0),y1:Y(t),x2:X(1),y2:Y(t),stroke:line,"stroke-width":1});
     if(k%2===0){
-      if(Math.abs(t-xi)>0.07) el("text",{x:X(t),y:Y(0)+18,"text-anchor":"middle","font-size":12,fill:muted}).textContent=t.toFixed(1);
+      if(Math.abs(t-xi)>0.07) el("text",{x:X(t),y:Y(0)+18,"text-anchor":"middle","font-size":14,fill:muted}).textContent=t.toFixed(1);
       const [lyf,lyg]=labelYs();
-      if(Math.abs(Y(t)-lyf)>20 && Math.abs(Y(t)-lyg)>20) el("text",{x:X(0)-8,y:Y(t)+4,"text-anchor":"end","font-size":12,fill:muted}).textContent=t.toFixed(1);
+      if(Math.abs(Y(t)-lyf)>20 && Math.abs(Y(t)-lyg)>20) el("text",{x:X(0)-8,y:Y(t)+4,"text-anchor":"end","font-size":14,fill:muted}).textContent=t.toFixed(1);
     }
   }
   let d="M"; const M=200;
@@ -124,7 +124,7 @@ function draw(){
   el("line",{x1:X(xi+DX/2),y1:by-5,x2:X(xi+DX/2),y2:by+5,stroke:muted,"stroke-width":1.5});
 
   // draggable handle on the x-axis, with a large invisible touch target
-  el("circle",{class:"drag",cx:X(xi),cy:Y(0),r:26,fill:"transparent"});
+  el("circle",{class:"drag",cx:X(xi),cy:Y(0),r:34,fill:"transparent"});
   el("circle",{cx:X(xi),cy:Y(0),r:8,fill:rl,stroke:card,"stroke-width":2,"pointer-events":"none"});
 }
 

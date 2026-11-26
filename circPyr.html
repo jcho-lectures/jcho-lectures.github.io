@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stacking the strips</title>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(','\\)']] },
+    svg: { fontCache: 'global' },
+    startup: { typeset: false }
+  };
+</script>
+<script id="mj" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+<style>
+  :root{
+    --bg:#fafaf7; --card:#fff; --ink:#1f2430; --muted:#6a7080; --line:#e3e3dc;
+    --accent:#dc2626; --strip:rgba(42,111,219,.35); --stripLine:#2a6fdb; --dash:#7c3aed;
+    --region:rgba(120,120,120,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#16181d; --card:#1e2128; --ink:#e8eaf0; --muted:#98a0b3; --line:#323744;
+      --accent:#f87171; --strip:rgba(110,162,255,.38); --stripLine:#6ea2ff; --dash:#c4b5fd;
+      --region:rgba(200,200,200,.12);}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,sans-serif}
+  main{max-width:640px;margin:0 auto;padding:16px 10px 32px}
+  h1{font:700 1.5rem/1.65 Georgia,"Times New Roman",serif;margin:0 0 .6rem}
+  p.desc{font:1rem/1.5 Georgia,"Times New Roman",serif;margin:0 0 .9rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .plotwrap{container-type:inline-size;position:relative;width:100%;margin:0 auto}
+  svg#plot{width:100%;height:100%;display:block;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+  svg#plot:focus{outline:none}
+  svg#plot .drag{cursor:grab}
+  svg#plot.dragging .drag{cursor:grabbing}
+  .lbl{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;line-height:1;pointer-events:none;
+       font-size:15px;font-size:clamp(13px,4cqw,18px);color:var(--ink);
+       text-shadow:0 0 3px var(--card),0 0 3px var(--card),0 0 3px var(--card),0 0 3px var(--card)}
+  .lbl.sm{font-size:13px;font-size:clamp(12px,3.4cqw,16px);color:var(--muted);font-family:Georgia,serif;font-style:italic}
+  mjx-container{color:inherit}
+  .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:10px}
+  .ctl label,.ctl .cap{font-weight:600;flex:1}
+  .ctl output{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--stripLine);font-size:1.1rem}
+  input[type=range]{flex:1 1 100%;width:100%;accent-color:var(--stripLine);height:28px}
+  .seg{display:flex;gap:8px}
+  .seg button{font:inherit;min-width:44px;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--stripLine);color:#fff;border-color:var(--stripLine)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Stacking the strips</h1>
+  <p class="desc">The circle is divided into \(N\) concentric strips. Each strip is peeled into a rectangle, and the rectangles are stacked and centered below the circle. Drag the slider to change \(N\), and watch what happens to the stack as \(N\) gets bigger.</p>
+  <div class="card">
+    <div class="plotwrap" style="aspect-ratio:640/336">
+      <svg id="plot" viewBox="0 0 640 336" role="img" aria-label="A circle cut into concentric strips, and the stack of rectangles obtained from the strips"></svg>
+    </div>
+    <div class="ctl">
+      <label for="n">Number of strips \(N\)</label>
+      <output id="nOut" for="n">3</output>
+      <input id="n" type="range" min="3" max="100" step="1" value="3">
+    </div>
+  </div>
+</main>
+<script>
+const NS="http://www.w3.org/2000/svg", svg=document.getElementById("plot");
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function el(tag,attrs){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);svg.appendChild(e);return e;}
+function place(id,x,y){const e=document.getElementById(id);e.style.left=(X(x)/W*100)+"%";e.style.top=(Y(y)/H*100)+"%";}
+function annulus(ri,ro){
+  const cx=X(0),cy=Y(0),a=ro*U,b=ri*U;
+  let d="M"+(cx-a)+","+cy+" a"+a+","+a+" 0 1,0 "+2*a+",0 a"+a+","+a+" 0 1,0 "+(-2*a)+",0 Z";
+  if(ri>0) d+=" M"+(cx-b)+","+cy+" a"+b+","+b+" 0 1,0 "+2*b+",0 a"+b+","+b+" 0 1,0 "+(-2*b)+",0 Z";
+  return d;
+}
+function ticks(x1,y1,x2,y2,tx,ty,stroke){   // double-ended bracket with end ticks (units)
+  el("line",{x1:X(x1),y1:Y(y1),x2:X(x2),y2:Y(y2),stroke,"stroke-width":1.6});
+  for(const [px,py] of [[x1,y1],[x2,y2]])
+    el("line",{x1:X(px-tx),y1:Y(py-ty),x2:X(px+tx),y2:Y(py+ty),stroke,"stroke-width":1.6});
+}
+
+const R=4, U=24, W=640, H=336, CX=320, YT=4.6, GAP=0.8;
+const X=x=>CX+x*U, Y=y=>(YT-y)*U;
+const slider=document.getElementById("n");
+function draw(N){
+  svg.innerHTML="";
+  const ink=css("--ink"), sl=css("--stripLine");
+  const dark=matchMedia("(prefers-color-scheme: dark)").matches;
+  const [L0,L1]=dark?[62,40]:[94,76];
+  const col=i=>"hsl(214 78% "+(L0+(L1-L0)*(N>1?(i-1)/(N-1):0)).toFixed(1)+"%)";
+  const h=R/N, sw=N>60?0.3:N>30?0.6:N>12?1:1.5;
+  const top=-(R+GAP);                       // top of the stack
+  for(let i=1;i<=N;i++){
+    // ring i (i = 1 innermost): between radii (i-1)h and ih; it becomes a rectangle of width 2*pi*r_i, r_i = (i-1/2)h, and height h
+    el("path",{d:annulus((i-1)*h,i*h),"fill-rule":"evenodd",fill:col(i),stroke:sl,"stroke-width":sw});
+  }
+  el("circle",{cx:X(0),cy:Y(0),r:R*U,fill:"none",stroke:ink,"stroke-width":1.3});
+  el("line",{x1:X(0),y1:Y(0),x2:X(0),y2:Y(R),stroke:ink,"stroke-width":2});   // radius up to the top of the circle
+  el("circle",{cx:X(0),cy:Y(0),r:3,fill:ink});
+  for(let i=1;i<=N;i++){
+    const w=2*Math.PI*(i-0.5)*h, ytop=top-(i-1)*h;   // widest rectangle at the bottom
+    el("rect",{x:X(-w/2),y:Y(ytop),width:w*U,height:h*U,fill:col(i),stroke:sl,"stroke-width":sw});
+  }
+}
+function update(){const N=+slider.value; document.getElementById("nOut").textContent=N; draw(N);}
+slider.addEventListener("input",update);
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",update);
+update();
+
+document.getElementById("mj").addEventListener("load",()=>{ MathJax.startup.promise.then(()=>MathJax.typesetPromise()); });
+</script>
+</body>
+</html>

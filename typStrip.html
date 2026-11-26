@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The typical circular strip</title>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(','\\)']] },
+    svg: { fontCache: 'global' },
+    startup: { typeset: false }
+  };
+</script>
+<script id="mj" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+<style>
+  :root{
+    --bg:#fafaf7; --card:#fff; --ink:#1f2430; --muted:#6a7080; --line:#e3e3dc;
+    --accent:#dc2626; --strip:rgba(42,111,219,.35); --stripLine:#2a6fdb; --dash:#7c3aed;
+    --region:rgba(120,120,120,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#16181d; --card:#1e2128; --ink:#e8eaf0; --muted:#98a0b3; --line:#323744;
+      --accent:#f87171; --strip:rgba(110,162,255,.38); --stripLine:#6ea2ff; --dash:#c4b5fd;
+      --region:rgba(200,200,200,.12);}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,sans-serif}
+  main{max-width:640px;margin:0 auto;padding:16px 10px 32px}
+  h1{font:700 1.5rem/1.65 Georgia,"Times New Roman",serif;margin:0 0 .6rem}
+  p.desc{font:1rem/1.5 Georgia,"Times New Roman",serif;margin:0 0 .9rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .plotwrap{container-type:inline-size;position:relative;width:100%;margin:0 auto}
+  svg#plot{width:100%;height:100%;display:block;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+  svg#plot:focus{outline:none}
+  svg#plot .drag{cursor:grab}
+  svg#plot.dragging .drag{cursor:grabbing}
+  .lbl{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;line-height:1;pointer-events:none;
+       font-size:15px;font-size:clamp(13px,4cqw,18px);color:var(--ink);
+       text-shadow:0 0 3px var(--card),0 0 3px var(--card),0 0 3px var(--card),0 0 3px var(--card)}
+  .lbl.sm{font-size:13px;font-size:clamp(12px,3.4cqw,16px);color:var(--muted);font-family:Georgia,serif;font-style:italic}
+  mjx-container{color:inherit}
+  .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:10px}
+  .ctl label,.ctl .cap{font-weight:600;flex:1}
+  .ctl output{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--stripLine);font-size:1.1rem}
+  input[type=range]{flex:1 1 100%;width:100%;accent-color:var(--stripLine);height:28px}
+  .seg{display:flex;gap:8px}
+  .seg button{font:inherit;min-width:44px;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--stripLine);color:#fff;border-color:var(--stripLine)}
+</style>
+</head>
+<body>
+<main>
+  <h1>The typical circular strip</h1>
+  <p class="desc">Drag the red point to change \(r_i\), and use the slider to change \(\Delta r\). The dashed circle marks the middle of the strip, and the rectangle below is what the strip turns into when it is peeled off.</p>
+  <div class="card">
+    <div class="plotwrap" style="aspect-ratio:640/319">
+      <div class="lbl" id="lri" style="color:var(--accent)">\(r_i\)</div>
+      <div class="lbl" id="ldr">\(\Delta r\)</div>
+      <div class="lbl" id="ldr2">\(\Delta r\)</div>
+      <svg id="plot" tabindex="0" viewBox="0 0 640 319" role="img" aria-label="A typical circular strip of radius r_i and thickness delta r, and the rectangle it becomes; drag the red point to change r_i"></svg>
+    </div>
+    <div class="ctl">
+      <label for="dr">Thickness \(\Delta r\)</label>
+      <input id="dr" type="range" min="0.25" max="2" step="0.05" value="1">
+    </div>
+  </div>
+</main>
+<script>
+const NS="http://www.w3.org/2000/svg", svg=document.getElementById("plot");
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function el(tag,attrs){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);svg.appendChild(e);return e;}
+function place(id,x,y){const e=document.getElementById(id);e.style.left=(X(x)/W*100)+"%";e.style.top=(Y(y)/H*100)+"%";}
+function annulus(ri,ro){
+  const cx=X(0),cy=Y(0),a=ro*U,b=ri*U;
+  let d="M"+(cx-a)+","+cy+" a"+a+","+a+" 0 1,0 "+2*a+",0 a"+a+","+a+" 0 1,0 "+(-2*a)+",0 Z";
+  if(ri>0) d+=" M"+(cx-b)+","+cy+" a"+b+","+b+" 0 1,0 "+2*b+",0 a"+b+","+b+" 0 1,0 "+(-2*b)+",0 Z";
+  return d;
+}
+function ticks(x1,y1,x2,y2,tx,ty,stroke){   // double-ended bracket with end ticks (units)
+  el("line",{x1:X(x1),y1:Y(y1),x2:X(x2),y2:Y(y2),stroke,"stroke-width":1.6});
+  for(const [px,py] of [[x1,y1],[x2,y2]])
+    el("line",{x1:X(px-tx),y1:Y(py-ty),x2:X(px+tx),y2:Y(py+ty),stroke,"stroke-width":1.6});
+}
+
+const R=4, U=24, W=640, H=319, CX=320, YT=5.4, RY=-5.5, BY=-6.95;
+const X=x=>CX+x*U, Y=y=>(YT-y)*U;
+let ri=2.5, h=1;
+const slider=document.getElementById("dr");
+const clampR=v=>Math.min(R-h/2,Math.max(h/2,v));
+
+function draw(){
+  svg.innerHTML="";
+  const ink=css("--ink"), card=css("--card"), muted=css("--muted"), strip=css("--strip"), sl=css("--stripLine"), dash=css("--dash"), acc=css("--accent");
+  const lo=ri-h/2, hi=ri+h/2, L=2*Math.PI*ri;
+  // circle and typical strip
+  el("circle",{cx:X(0),cy:Y(0),r:R*U,fill:card,stroke:ink,"stroke-width":1.5});
+  el("path",{class:"drag",d:annulus(lo,hi),"fill-rule":"evenodd",fill:strip,stroke:sl,"stroke-width":1.6});
+  el("circle",{cx:X(0),cy:Y(0),r:ri*U,fill:"none",stroke:dash,"stroke-width":2.2,"stroke-dasharray":"7 5","pointer-events":"none"});
+  // dotted radius to the right (the red point lives on it), and the red segment from the center to the point
+  el("line",{x1:X(0),y1:Y(0),x2:X(R),y2:Y(0),stroke:ink,"stroke-width":2.4,"stroke-dasharray":"0.1 6","stroke-linecap":"round","pointer-events":"none"});
+  el("line",{x1:X(0),y1:Y(0),x2:X(ri),y2:Y(0),stroke:acc,"stroke-width":2.6,"pointer-events":"none"});
+  el("circle",{cx:X(0),cy:Y(0),r:3,fill:ink,"pointer-events":"none"});
+  // thickness marker on the strip (at the top of the circle)
+  ticks(0,lo,0,hi,0.16,0,ink);
+  place("ldr",0,hi+0.8);
+  // draggable point r_i
+  el("circle",{class:"drag",cx:X(ri),cy:Y(0),r:34,fill:"transparent"});
+  el("circle",{cx:X(ri),cy:Y(0),r:8,fill:acc,stroke:card,"stroke-width":2,"pointer-events":"none"});
+  place("lri",ri/2,0.62);
+  // the rectangle
+  const x0=-L/2, x1=L/2, yt=RY+h/2, yb=RY-h/2;
+  el("rect",{x:X(x0),y:Y(yt),width:L*U,height:h*U,fill:strip,stroke:"none"});
+  el("line",{x1:X(x0),y1:Y(yt),x2:X(x0),y2:Y(yb),stroke:sl,"stroke-width":1.8});
+  el("line",{x1:X(x1),y1:Y(yt),x2:X(x1),y2:Y(yb),stroke:sl,"stroke-width":1.8});
+  for(const yy of [yt,yb]) el("line",{x1:X(x0),y1:Y(yy),x2:X(x1),y2:Y(yy),stroke:dash,"stroke-width":2.2,"stroke-dasharray":"7 5"});
+  // rectangle labels: thickness at the left, width underneath
+  ticks(x0-0.5,yb,x0-0.5,yt,0.16,0,ink);
+  place("ldr2",x0-0.5,yt+0.9);
+  ticks(x0,BY,x1,BY,0,0.16,dash);   // width of the rectangle (purple)
+}
+function update(){
+  h=+slider.value; ri=clampR(ri);
+  draw();
+}
+function setRi(v){ri=clampR(Math.round(v*100)/100); draw();}
+function fromEvent(e){
+  const pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
+  const p=pt.matrixTransform(svg.getScreenCTM().inverse());
+  const x=(p.x-CX)/U, y=YT-p.y/U;
+  setRi(Math.hypot(x,y));
+}
+let dragging=false;
+svg.addEventListener("pointerdown",e=>{
+  if(!e.target.classList||!e.target.classList.contains("drag")) return;
+  dragging=true; svg.classList.add("dragging"); svg.setPointerCapture(e.pointerId); fromEvent(e); e.preventDefault();
+});
+svg.addEventListener("pointermove",e=>{ if(dragging) fromEvent(e); });
+const stop=()=>{dragging=false; svg.classList.remove("dragging");};
+svg.addEventListener("pointerup",stop); svg.addEventListener("pointercancel",stop);
+svg.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft"||e.key==="ArrowDown"){setRi(ri-0.05);e.preventDefault();}
+  if(e.key==="ArrowRight"||e.key==="ArrowUp"){setRi(ri+0.05);e.preventDefault();}
+});
+slider.addEventListener("input",update);
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",draw);
+update();
+
+document.getElementById("mj").addEventListener("load",()=>{ MathJax.startup.promise.then(()=>MathJax.typesetPromise()); });
+</script>
+</body>
+</html>

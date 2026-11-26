@@ -27,15 +27,16 @@
   body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,sans-serif}
   main{max-width:640px;margin:0 auto;padding:16px 10px 32px}
   h1{font:700 1.5rem/1.65 Georgia,"Times New Roman",serif;margin:0 0 .6rem}
+  p.desc{font:1rem/1.5 Georgia,"Times New Roman",serif;margin:0 0 .9rem}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
-  .plotwrap{container-type:inline-size;position:relative;width:100%;max-width:520px;margin:0 auto;aspect-ratio:566/578}
-  .legend{position:absolute;top:0;left:16.25%;display:flex;flex-wrap:wrap;gap:2px 3.4cqw;font-size:16px;font-size:3.05cqw;line-height:1.2;pointer-events:none}
+  .plotwrap{container-type:inline-size;position:relative;width:100%;max-width:520px;margin:0 auto;aspect-ratio:550/578}
+  .legend{position:absolute;top:0;left:13.8%;display:flex;flex-wrap:wrap;gap:2px 3.4cqw;font-size:15px;font-size:clamp(12px,3.6cqw,16px);line-height:1.2;pointer-events:none}
   .legend i{display:inline-block;width:4.2cqw;height:3px;margin-right:1.2cqw;vertical-align:middle;border-radius:2px}
-  .lbl{position:absolute;white-space:nowrap;line-height:1;pointer-events:none;font-size:16px;font-size:3.1cqw}
+  .lbl{position:absolute;white-space:nowrap;line-height:1;pointer-events:none;font-size:15px;font-size:clamp(13px,4cqw,18px)}
   #lf{color:var(--f);transform:translate(0,-50%)}
   #lg{color:var(--g);transform:translate(0,-50%)}
   #lxi{color:var(--rectLine);transform:translate(-50%,-50%)}
-  #ldx{color:var(--muted);transform:translate(-50%,-50%);font-size:12px;font-size:2.4cqw}
+  #ldx{color:var(--muted);transform:translate(-50%,-50%);font-size:12px;font-size:clamp(11px,3cqw,14px)}
   mjx-container{color:inherit}
   svg#plot{width:100%;height:100%;display:block;touch-action:pan-y;user-select:none;-webkit-user-select:none}
   svg#plot .drag{cursor:grab}
@@ -55,8 +56,9 @@
 <body>
 <main>
   <h1>The typical rectangle</h1>
+  <p class="desc">Drag the red point along the \(x\)-axis to change \(x_i\). The red rectangle has width \(\Delta x\), is centered at \(x_i\), and lies between the graphs of \(f\) and \(g\). Watch how it changes as \(x_i\) moves.</p>
   <div class="card">
-    <div class="plotwrap"><div class="legend"><span><i style="background:var(--f)"></i>\(f(x) = 2x - x^2\)</span><span><i style="background:var(--g)"></i>\(g(x) = x^2\)</span></div><div class="lbl" id="lf">\(f(x_i)\)</div><div class="lbl" id="lg">\(g(x_i)\)</div><div class="lbl" id="lxi">\(x_i\)</div><div class="lbl" id="ldx">\(\Delta x\)</div><svg id="plot" viewBox="0 0 566 578" tabindex="0" role="img" aria-label="A typical rectangle between f(x) = 2x - x^2 and g(x) = x^2; drag the point x_i on the axis"></svg></div>
+    <div class="plotwrap"><div class="legend"><span><i style="background:var(--f)"></i>\(f(x) = 2x - x^2\)</span><span><i style="background:var(--g)"></i>\(g(x) = x^2\)</span></div><div class="lbl" id="lf">\(f(x_i)\)</div><div class="lbl" id="lg">\(g(x_i)\)</div><div class="lbl" id="lxi">\(x_i\)</div><div class="lbl" id="ldx">\(\Delta x\)</div><svg id="plot" viewBox="0 0 550 578" tabindex="0" role="img" aria-label="A typical rectangle between f(x) = 2x - x^2 and g(x) = x^2; drag the point x_i on the axis"></svg></div>
   </div>
 </main>
 
@@ -64,7 +66,7 @@
 const NS="http://www.w3.org/2000/svg";
 const svg=document.getElementById("plot");
 // Equal scale on both axes (x and y both run over [0,1]).
-const L=92, T=48, side=450, DX=1/23, S=566, H=578;
+const L=76, T=48, side=450, DX=1/23, S=550, H=578;
 const X=x=>L+x*side, Y=y=>T+(1-y)*side;
 const f=x=>2*x-x*x, g=x=>x*x;
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();

@@ -27,14 +27,15 @@
   h1{font-size:1.5rem;margin:0 0 .6rem}
   p{margin:.8rem 0}
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .plotwrap{width:100%;max-width:520px;margin:0 auto;aspect-ratio:1/1}
+  .plotwrap{position:relative;width:100%;max-width:520px;margin:0 auto;aspect-ratio:520/544}
+  .curvelabel{position:absolute;top:0;right:4.6%;font-size:1.05em;line-height:1;pointer-events:none}
   svg#plot{width:100%;height:100%;display:block}
   mjx-container{color:var(--ink)}
   mjx-container[display="true"]{margin:.9rem 0 !important;overflow-x:auto;overflow-y:hidden;padding:2px 0}
-  .ctl{display:flex;align-items:center;gap:14px;margin-top:10px;font-family:system-ui,sans-serif}
-  .ctl label{font-weight:600;white-space:nowrap}
+  .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:10px;font-family:system-ui,sans-serif}
+  .ctl label{font-weight:600;flex:1}
   .ctl output{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);font-size:1.1rem}
-  input[type=range]{flex:1;accent-color:var(--accent);height:28px}
+  input[type=range]{flex:1 1 100%;width:100%;accent-color:var(--accent);height:28px}
   .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px;font-family:system-ui,sans-serif}
   .stat{border:1px solid var(--line);border-radius:10px;padding:8px 12px}
   .stat b{display:block;font-size:1.1rem;font-variant-numeric:tabular-nums}
@@ -50,11 +51,11 @@
   <p>To approximate the area under the curve given by \(f(x) = x^2\) (here from \(x=0\) to \(x=1\)), we use rectangles.</p>
 
   <div class="card">
-    <div class="plotwrap"><svg id="plot" viewBox="0 0 520 520" role="img" aria-label="Rectangles under the parabola y = x squared"></svg></div>
+    <div class="plotwrap"><div class="curvelabel">\(y = x^2\)</div><svg id="plot" viewBox="0 0 520 544" role="img" aria-label="Rectangles under the parabola y = x squared"></svg></div>
     <div class="ctl">
       <label for="n">Number of rectangles \(N\)</label>
-      <input id="n" type="range" min="1" max="100" value="4" step="1">
       <output id="nOut" for="n">4</output>
+      <input id="n" type="range" min="1" max="100" value="4" step="1">
     </div>
     <div class="stats">
       <div class="stat"><span>\(\Delta x = 1/N\)</span><b id="dx"></b></div>
@@ -83,7 +84,7 @@ const NS = "http://www.w3.org/2000/svg";
 const svg = document.getElementById("plot");
 const slider = document.getElementById("n");
 // Square plot area: 1 unit in x has the same length as 1 unit in y (1:1 aspect ratio).
-const S=520, L=46, T=24, B=46, R=24;
+const S=520, L=46, T=48, B=46, R=24;
 const side = S-L-R;            // = 450 = S-T-B  -> pw == ph
 const X = x => L + x*side, Y = y => T + (1-y)*side;
 const f = x => x*x;
@@ -123,7 +124,6 @@ function draw(N){
   let d="";
   for(let k=0;k<=200;k++){const x=k/200; d+=(k?"L":"M")+X(x).toFixed(2)+","+Y(f(x)).toFixed(2);}
   el("path",{d,fill:"none",stroke:curve,"stroke-width":2.5});
-  el("text",{x:X(0.5),y:Y(0.25)-14,"font-size":16,fill:curve,"font-family":"Georgia,serif","font-style":"italic"}).textContent="y = x²";
   if(N<=10){
     for(let i=1;i<=N;i++){
       const t=el("text",{x:X(i/N),y:Y(0)+36,"text-anchor":"middle","font-size":12,fill:rl,"font-family":"Georgia,serif","font-style":"italic"});

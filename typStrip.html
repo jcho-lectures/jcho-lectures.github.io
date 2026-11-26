@@ -53,15 +53,16 @@
   <h1>The typical circular strip</h1>
   <p class="desc">Drag the red point to change \(r_i\), and use the slider to change \(\Delta r\). The dashed circle marks the middle of the strip, and the rectangle below is what the strip turns into when it is peeled off.</p>
   <div class="card">
-    <div class="plotwrap" style="aspect-ratio:640/319">
+    <div class="plotwrap" style="aspect-ratio:640/343">
+      <div class="lbl" id="lR">\(R\)</div>
       <div class="lbl" id="lri" style="color:var(--accent)">\(r_i\)</div>
       <div class="lbl" id="ldr">\(\Delta r\)</div>
       <div class="lbl" id="ldr2">\(\Delta r\)</div>
-      <svg id="plot" tabindex="0" viewBox="0 0 640 319" role="img" aria-label="A typical circular strip of radius r_i and thickness delta r, and the rectangle it becomes; drag the red point to change r_i"></svg>
+      <svg id="plot" tabindex="0" viewBox="0 0 640 343" role="img" aria-label="A typical circular strip of radius r_i and thickness delta r, and the rectangle it becomes; drag the red point to change r_i"></svg>
     </div>
     <div class="ctl">
       <label for="dr">Thickness \(\Delta r\)</label>
-      <input id="dr" type="range" min="0.25" max="2" step="0.05" value="1">
+      <input id="dr" type="range" min="0.25" max="1.125" step="0.005" value="0.5417">
     </div>
   </div>
 </main>
@@ -82,22 +83,38 @@ function ticks(x1,y1,x2,y2,tx,ty,stroke){   // double-ended bracket with end tic
     el("line",{x1:X(px-tx),y1:Y(py-ty),x2:X(px+tx),y2:Y(py+ty),stroke,"stroke-width":1.6});
 }
 
-const R=4, U=24, W=640, H=319, CX=320, YT=5.4, RY=-5.5, BY=-6.95;
+const R=4, U=24, W=640, H=343, CX=320, YT=6.4, RY=-5.5, BY=-6.95;
 const X=x=>CX+x*U, Y=y=>(YT-y)*U;
-let ri=2.5, h=1;
+let ri=2.5, h=0.54;
 const slider=document.getElementById("dr");
-const clampR=v=>Math.min(R-h/2,Math.max(h/2,v));
+const clampR=v=>Math.min(R,Math.max(0,v));   // r_i can go all the way from the center to R
 
 function draw(){
   svg.innerHTML="";
   const ink=css("--ink"), card=css("--card"), muted=css("--muted"), strip=css("--strip"), sl=css("--stripLine"), dash=css("--dash"), acc=css("--accent");
-  const lo=ri-h/2, hi=ri+h/2, L=2*Math.PI*ri;
+  const lo=ri-h/2, hi=ri+h/2, L=2*Math.PI*ri, lo0=Math.max(0,lo);
   // circle and typical strip
   el("circle",{cx:X(0),cy:Y(0),r:R*U,fill:card,stroke:ink,"stroke-width":1.5});
-  el("path",{class:"drag",d:annulus(lo,hi),"fill-rule":"evenodd",fill:strip,stroke:sl,"stroke-width":1.6});
+  el("path",{class:"drag",d:annulus(lo0,hi),"fill-rule":"evenodd",fill:strip,stroke:sl,"stroke-width":1.6});
   el("circle",{cx:X(0),cy:Y(0),r:ri*U,fill:"none",stroke:dash,"stroke-width":2.2,"stroke-dasharray":"7 5","pointer-events":"none"});
-  // dotted radius to the right (the red point lives on it), and the red segment from the center to the point
-  el("line",{x1:X(0),y1:Y(0),x2:X(R),y2:Y(0),stroke:ink,"stroke-width":2.4,"stroke-dasharray":"0.1 6","stroke-linecap":"round","pointer-events":"none"});
+  // radius to the right (solid), a curly brace marking its length R, and the red segment from the center to the point
+  el("line",{x1:X(0),y1:Y(0),x2:X(R),y2:Y(0),stroke:ink,"stroke-width":2,"pointer-events":"none"});
+  {
+    const y=-0.4, d=0.4, q=0.55, m=R/2, xa=0, xb=R;
+    const pt=(x,yy)=>X(x).toFixed(2)+","+Y(yy).toFixed(2);
+    el("path",{d:"M"+pt(xa,y)+" Q"+pt(xa,y-d)+" "+pt(xa+q,y-d)+" L"+pt(m-q,y-d)+" Q"+pt(m,y-d)+" "+pt(m,y-2*d)
+      +" Q"+pt(m,y-d)+" "+pt(m+q,y-d)+" L"+pt(xb-q,y-d)+" Q"+pt(xb,y-d)+" "+pt(xb,y),
+      fill:"none",stroke:ink,"stroke-width":1.8,"pointer-events":"none"});
+    // curved arrow (concave up) from the label R, under the brace, up to the middle of the brace
+    const ya=y-2*d;
+    const S=[R+0.7,ya-0.25], E=[m+0.05,ya-0.2], C=[m+1.5,ya-2.0];
+    el("path",{d:"M"+pt(S[0],S[1])+" Q"+pt(C[0],C[1])+" "+pt(E[0],E[1]),fill:"none",stroke:ink,"stroke-width":1.6,"pointer-events":"none"});
+    let ux=E[0]-C[0], uy=E[1]-C[1]; const ul=Math.hypot(ux,uy); ux/=ul; uy/=ul;
+    const rot=(vx,vy,a)=>[vx*Math.cos(a)-vy*Math.sin(a), vx*Math.sin(a)+vy*Math.cos(a)];
+    const h1=rot(-ux,-uy,0.45), h2=rot(-ux,-uy,-0.45);
+    el("path",{d:"M"+pt(E[0]+0.34*h1[0],E[1]+0.34*h1[1])+" L"+pt(E[0],E[1])+" L"+pt(E[0]+0.34*h2[0],E[1]+0.34*h2[1]),fill:"none",stroke:ink,"stroke-width":1.6,"stroke-linejoin":"round","pointer-events":"none"});
+    place("lR",R+1.45,ya-0.2);
+  }
   el("line",{x1:X(0),y1:Y(0),x2:X(ri),y2:Y(0),stroke:acc,"stroke-width":2.6,"pointer-events":"none"});
   el("circle",{cx:X(0),cy:Y(0),r:3,fill:ink,"pointer-events":"none"});
   // thickness marker on the strip (at the top of the circle)

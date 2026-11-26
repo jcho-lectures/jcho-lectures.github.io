@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area Between Two Curves: Rectangles</title>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(','\\)']] },
+    svg: { fontCache: 'global' },
+    startup: { typeset: false }
+  };
+</script>
+<script id="mj" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
+<style>
+  :root{
+    --bg:#fafaf7; --card:#fff; --ink:#1f2430; --muted:#6a7080; --line:#e3e3dc;
+    --accent:#2a6fdb; --rect:rgba(42,111,219,.28); --rectLine:#2a6fdb;
+    --f:#000; --g:#7c3aed; --region:rgba(120,120,120,.13);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{--bg:#16181d; --card:#1e2128; --ink:#e8eaf0; --muted:#98a0b3; --line:#323744;
+      --accent:#6ea2ff; --rect:rgba(110,162,255,.28); --rectLine:#6ea2ff;
+      --f:#fff; --g:#c4b5fd; --region:rgba(200,200,200,.12);}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 system-ui,sans-serif}
+  main{max-width:640px;margin:0 auto;padding:20px 16px 40px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .plotwrap{position:relative;width:100%;max-width:520px;margin:0 auto;aspect-ratio:520/548}
+  .legend{position:absolute;top:0;left:8.85%;display:flex;flex-wrap:wrap;gap:2px 18px;font-size:.95em;line-height:1.2;pointer-events:none}
+  .legend i{display:inline-block;width:22px;height:3px;margin-right:6px;vertical-align:middle;border-radius:2px}
+  .xl{position:absolute;transform:translate(-50%,-50%);font-size:.62em;line-height:1;color:var(--rectLine);pointer-events:none;white-space:nowrap}
+  mjx-container{color:inherit}
+  svg#plot{width:100%;height:100%;display:block}
+  .ctl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin-top:10px}
+  .ctl label{font-weight:600;flex:1}
+  .ctl output{min-width:3.2em;text-align:right;font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);font-size:1.1rem}
+  input[type=range]{flex:1 1 100%;width:100%;accent-color:var(--accent);height:28px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-top:12px}
+  .stat{border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+  .stat b{display:block;font-size:1.1rem;font-variant-numeric:tabular-nums}
+  .stat span{font-size:.8rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="plotwrap"><div class="legend"><span><i style="background:var(--f)"></i>\(f(x) = 2x - x^2\)</span><span><i style="background:var(--g)"></i>\(g(x) = x^2\)</span></div><div id="xl"></div><svg id="plot" viewBox="0 0 520 548" role="img" aria-label="Rectangles between the curves f(x) = 2x - x^2 and g(x) = x^2"></svg></div>
+    <div class="ctl">
+      <label for="n">Number of rectangles \(N\)</label>
+      <output id="nOut" for="n">5</output>
+      <input id="n" type="range" min="1" max="100" value="5" step="1">
+    </div>
+    <div class="stats">
+      <div class="stat"><span>\(\Delta x = 1/N\)</span><b id="dx"></b></div>
+      <div class="stat"><span>Total area of rectangles</span><b id="sum"></b></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const svg=document.getElementById("plot"), slider=document.getElementById("n");
+// Equal scale on both axes (x and y both run over [0,1]).
+const S=520, L=46, T=48, side=450, H=548;
+const X=x=>L+x*side, Y=y=>T+(1-y)*side;
+const f=x=>2*x-x*x, g=x=>x*x;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const P=(x,y)=>X(x).toFixed(2)+","+Y(y).toFixed(2);
+function el(tag,attrs){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);svg.appendChild(e);return e;}
+
+let chain=Promise.resolve();
+function typeset(els){
+  if(!(window.MathJax&&MathJax.typesetPromise)) return;
+  chain=chain.then(()=>{MathJax.typesetClear(els);return MathJax.typesetPromise(els);}).catch(()=>{});
+}
+function draw(N){
+  svg.innerHTML="";
+  const ink=css("--ink"), muted=css("--muted"), line=css("--line"), rect=css("--rect"), rl=css("--rectLine");
+  const cf=css("--f"), cg=css("--g"), region=css("--region");
+  for(let k=0;k<=4;k++){
+    const t=k/4;
+    el("line",{x1:X(t),y1:Y(0),x2:X(t),y2:Y(1),stroke:line,"stroke-width":1});
+    el("line",{x1:X(0),y1:Y(t),x2:X(1),y2:Y(t),stroke:line,"stroke-width":1});
+    el("text",{x:X(t),y:Y(0)+18,"text-anchor":"middle","font-size":12,fill:muted}).textContent=t;
+    el("text",{x:X(0)-8,y:Y(t)+4,"text-anchor":"end","font-size":12,fill:muted}).textContent=t;
+  }
+  // region between the curves
+  let d="M"; const M=200;
+  for(let k=0;k<=M;k++){const x=k/M; d+=(k?" L":"")+P(x,f(x));}
+  for(let k=M;k>=0;k--){const x=k/M; d+=" L"+P(x,g(x));}
+  el("path",{d:d+" Z",fill:region,stroke:"none"});
+  // rectangles (right endpoints): width Δx, from g(x_i) up to f(x_i)
+  const sw=N>120?0.25:N>60?0.4:N>30?0.8:1.4;
+  for(let i=1;i<=N;i++){
+    const x0=(i-1)/N, x1=i/N, lo=g(x1), hi=f(x1);
+    el("rect",{x:X(x0),y:Y(hi),width:X(x1)-X(x0),height:Math.max(0,Y(lo)-Y(hi)),fill:rect,stroke:rl,"stroke-width":sw});
+  }
+  el("line",{x1:X(0),y1:Y(0),x2:X(1)+10,y2:Y(0),stroke:ink,"stroke-width":1.5});
+  el("line",{x1:X(0),y1:Y(0),x2:X(0),y2:Y(1)-10,stroke:ink,"stroke-width":1.5});
+  // curves
+  let df="", dg="";
+  for(let k=0;k<=M;k++){const x=k/M; df+=(k?"L":"M")+P(x,f(x)); dg+=(k?"L":"M")+P(x,g(x));}
+  el("path",{d:df,fill:"none",stroke:cf,"stroke-width":2.5});
+  el("path",{d:dg,fill:"none",stroke:cg,"stroke-width":2.5});
+  // x_i labels (LaTeX, HTML overlay) for few rectangles
+  const xl=document.getElementById("xl"); xl.innerHTML="";
+  if(N<=10){
+    for(let i=1;i<=N;i++){
+      const d=document.createElement("div"); d.className="xl";
+      d.style.left=(X(i/N)/S*100)+"%"; d.style.top=((Y(0)+36)/H*100)+"%";
+      d.textContent="\\(x_{"+i+"}\\)"; xl.appendChild(d);
+    }
+    typeset([xl]);
+  }
+}
+
+function update(){
+  const N=+slider.value;
+  draw(N);
+  let s=0; for(let i=1;i<=N;i++) s+=(f(i/N)-g(i/N))/N;
+  document.getElementById("nOut").textContent=N;
+  document.getElementById("dx").textContent="1/"+N+" = "+(1/N).toFixed(4);
+  document.getElementById("sum").textContent=s.toFixed(4);
+}
+slider.addEventListener("input",update);
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",update);
+update();
+document.getElementById("mj").addEventListener("load",()=>{
+  MathJax.startup.promise.then(()=>{ update(); return MathJax.typesetPromise(); });
+});
+</script>
+</body>
+</html>
